@@ -7,11 +7,11 @@ import mysql.connector
 from datetime import datetime
 
 connection = mysql.connector.connect(
-  host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com",
-  port = 4000,
-  user = "JLMYagiq919U7D8.root",
-  password = "W5p0nq33F4qJEN28",
-  database = "t1",
+  host = "",
+  port = ,
+  user = "",
+  password = "",
+  database = "",
   
 )
 mycursor = connection.cursor(buffered=True)
