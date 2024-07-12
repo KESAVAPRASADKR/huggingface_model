@@ -1,138 +1,160 @@
-Documentation for Sentiment Analysis Streamlit Application
-Overview
-This Streamlit application performs sentiment analysis on user-provided text using a Hugging Face Transformers model. It also records the user's name and the timestamp when they first use the app in a MySQL database.
-Dependencies
-Ensure you have the following Python packages installed:
-•	streamlit
-•	transformers
-•	scipy
+Documentation for GPT-2 Fine-Tuning and Text Generation Script
+This documentation provides an overview of the Python script used for fine-tuning a GPT-2 language model and generating text. The script leverages the Hugging Face Transformers library and includes functions for reading text files, preparing datasets, training the model, and generating text.
+Requirements
+Before running the script, ensure you have the following libraries installed:
+•	pandas
 •	numpy
-•	mysql-connector-python
-You can install them using pip:
-bash
+•	re
+•	os
+•	transformers
+You can install the required libraries using:
+pip install pandas numpy 
+pip install pip install
+pip install transformers
+Code Overview
+Import Statements
+python
 Copy code
-pip install streamlit transformers scipy numpy mysql-connector-python
-Database Setup
-The application uses a MySQL database to store user information. Configure the MySQL connection with the following parameters:
-•	host: "your host"
-•	port: your port
-•	user: "username"
-•	password: ""
-•	database: ""
-Ensure the user_data table exists with the following schema:
-Sql query 
-
-CREATE TABLE user_data (
-    name VARCHAR(255) NOT NULL,
-    timestamp DATETIME NOT NULL
-);
-Application Structure
-Imports
-The necessary libraries and modules are imported at the beginning of the script:
-import streamlit as st
-import mysql.connector
-from transformers import AutoTokenizer, AutoConfig, AutoModelForSequenceClassification
-from scipy.special import softmax
+import pandas as pd
 import numpy as np
-from datetime import datetime
-Database Connection
-A connection to the MySQL database is established:
+import re
+import os
+from transformers import TextDataset, DataCollatorForLanguageModeling
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
+from transformers import Trainer, TrainingArguments
+These import statements bring in the necessary libraries and modules for data handling, text processing, and model training.
+Functions
+1. read_txt(file_path)
+Reads a text file and returns its content as a string.
 python
 Copy code
-connection = mysql.connector.connect(
-•	host= "your host"
-•	port= your port
-•	user= "username"
-•	password=""
-•	database= ""
+def read_txt(file_path):
+    with open(file_path, "r", encoding='utf-8') as file:
+        text = file.read()
+    return text
+2. load_dataset(file_path, tokenizer, block_size=128)
+Loads the dataset for training using the provided tokenizer.
+python
+Copy code
+def load_dataset(file_path, tokenizer, block_size=128):
+    dataset = TextDataset(
+        tokenizer=tokenizer,
+        file_path=file_path,
+        block_size=block_size,
+    )
+    return dataset
+3. load_data_collator(tokenizer, mlm=False)
+Loads the data collator for language modeling.
+python
+Copy code
+def load_data_collator(tokenizer, mlm=False):
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, 
+        mlm=mlm,
+    )
+    return data_collator
+4. train(train_file_path, model_name, output_dir, overwrite_output_dir, per_device_train_batch_size, num_train_epochs, save_steps)
+Trains the GPT-2 model using the specified parameters.
+python
+Copy code
+def train (train_file_path, model_name,
+          output_dir,
+          overwrite_output_dir,
+          per_device_train_batch_size,
+          num_train_epochs,
+          save_steps):
+    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+    train_dataset = load_dataset(train_file_path, tokenizer)
+    data_collator = load_data_collator(tokenizer)
+
+    tokenizer.save_pretrained(output_dir)
+
+    model = GPT2LMHeadModel.from_pretrained(model_name)
+
+    model.save_pretrained(output_dir)
+
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        overwrite_output_dir=overwrite_output_dir,
+        per_device_train_batch_size=per_device_train_batch_size,
+        num_train_epochs=num_train_epochs,
+    )
+
+    trainer = Trainer (
+        model=model,
+        args=training_args,
+        data_collator=data_collator,
+        train_dataset=train_dataset,
+    )
+
+    trainer.train()
+    trainer.save_model()
+5. load_model(model_path)
+Loads a pretrained GPT-2 model from the specified path.
+python
+Copy code
+def load_model(model_path):
+    model = GPT2LMHeadModel.from_pretrained(model_path)
+    return model
+6. load_tokenizer(tokenizer_path)
+Loads a pretrained tokenizer from the specified path.
+python
+Copy code
+def load_tokenizer(tokenizer_path):
+    tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_path)
+    return tokenizer
+7. generate_text(model_path, tokenizer_path, sequence, max_length)
+Generates text using the trained GPT-2 model.
+python
+Copy code
+def generate_text(model_path, tokenizer_path, sequence, max_length):
+    model = load_model(model_path)
+    tokenizer = load_tokenizer(tokenizer_path)
+    ids = tokenizer.encode(f'{sequence}', return_tensors='pt')
+    final_outputs = model.generate(
+        ids,
+        do_sample=True,
+        max_length=max_length,
+        pad_token_id=model.config.eos_token_id,
+        top_k=50,
+        top_p=0.95,
+    )
+    print(tokenizer.decode(final_outputs[0], skip_special_tokens=True))
+model_path=’paste your model path’
+text=input()
+max_len=150
+generate_text(model_path, text, max_len)
+
+Main Script Execution
+1.	Read and preprocess the training text file:
+python
+Copy code
+train_directory = r"your path "
+text_data = read_txt(train_directory)
+text_data = re.sub(r'\n+', '\n', text_data).strip()
+with open(r'path, "w", encoding='utf-8') as f:
+    f.write(text_data)
+2.	Define training parameters and execute the training function:
+python
+Copy code
+train_file_path = r"path"
+model_name = 'gpt2'
+output_dir = r'C:\Users\kesav\Guvi\guvi main\c6'
+overwrite_output_dir = False
+per_device_train_batch_size = 8
+num_train_epochs = 30
+save_steps = 10000
+
+# Train the model
+train (
+    train_file_path=train_file_path,
+    model_name=model_name,
+    output_dir=output_dir,
+    overwrite_output_dir=overwrite_output_dir,
+    per_device_train_batch_size=per_device_train_batch_size,
+    num_train_epochs=num_train_epochs,
+    save_steps=save_steps
 )
-mycursor = connection.cursor(buffered=True)
-Text Preprocessing
-A function to preprocess text by replacing user mentions and URLs:
-python
-Copy code
-def preprocess(text):
-    new_text = []
-    for t in text.split(" "):
-        t = '@user' if t.startswith('@') and len(t) > 1 else t
-        t = 'http' if t.startswith('http') else t
-        new_text.append(t)
-    return " ".join(new_text)
-Model Loading
-Loading the sentiment analysis model and tokenizer:
-python
-Copy code
-MODEL = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-tokenizer = AutoTokenizer.from_pretrained(MODEL)
-config = AutoConfig.from_pretrained(MODEL)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-Sentiment Prediction
-A function to predict sentiment from the provided text:
-python
-def predict(text):
-    preprocessed_text = preprocess(text)
-    encoded_input = tokenizer(preprocessed_text, return_tensors='pt')
-    output = model(**encoded_input)
-    scores = output[0][0].detach().numpy()
-    scores = softmax(scores)
+This script reads a text file, preprocesses the text, trains a GPT-2 model with the preprocessed text, and saves the trained model and tokenizer. The script also includes functions for loading the trained model and tokenizer and generating text from the trained model.
 
-    ranking = np.argsort(scores)
-    ranking = ranking[::-1]
-
-    output_text = ""
-    for i in range(scores.shape[0]):
-        label = config.id2label[ranking[i]]
-        score = np.round(float(scores[ranking[i]]), 4)
-        output_text += f"{i+1}) {label}: {score}\n"
-
-    return output_text
-Main Application
-The main function checks if the user’s name is stored in the session state and navigates to the appropriate page:
-python
-Copy code
-def main():
-    if 'name' not in st.session_state:
-        st.session_state['name'] = None
-
-    if st.session_state['name'] is None:
-        name_page()
-    else:
-        sentiment_analysis_page()
-Name Page
-A page to collect the user's name and store it in the database:
-def name_page():
-    st.title("Welcome!")
-    st.write("Please enter your name:")
-    name = st.text_input("Name")
-    if st.button("Submit Name"):
-        if name:
-            timestamp = datetime.now()
-            query = "INSERT INTO user_data (name, timestamp) VALUES (%s, %s)"
-            mycursor.execute(query, (name, timestamp))
-            connection.commit()
-            st.session_state['name'] = name
-            st.experimental_rerun()
-        else:
-            st.write("Please enter a valid name.")
-Sentiment Analysis Page
-A page for performing sentiment analysis on user-provided text:
-
-def sentiment_analysis_page():
-    st.title("Sentiment Analysis with Hugging Face Transformers")
-    st.write(f"Hello, {st.session_state['name']}!")
-    st.write("Enter some text and see the predicted sentiment with confidence scores.")
-    user_input = st.text_area("Enter your text here:")
-    if st.button("Analyze"):
-        if user_input:
-            result = predict(user_input)
-            st.text(result)
-        else:
-            st.write("Please enter some text for analysis.")
-Running the Application
-Run the Streamlit application by executing the following command in your terminal:
-in your terminal 
-streamlit run app.py
-Replace app.py with the filename of your script.
-Conclusion
-This Streamlit application allows users to perform sentiment analysis on text input using a pre-trained model from Hugging Face. It also stores user information in a MySQL database. The application consists of two main pages: one for collecting user names and another for performing sentiment analysis.
 
